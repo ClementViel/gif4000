@@ -16,7 +16,21 @@ def take_photo(phone):
     phone.shell("am broadcast -a com.example.accidentgif.ACTION_SEND\
                             -t text/plain \
                             -e command \"take photo\"\
-                            -n com.example.accidentgif")
+                            -n com.example.accidentgif/.IntentReceiver")
 
 
-phone = connect_to_phone()
+def erase_dir(phone):
+    phone.shell("am broadcast -a com.example.accidentgif.ACTION_SEND\
+                            -t text/plain \
+                            -e command \"erase\"\
+                            -n com.example.accidentgif/.IntentReceiver")
+
+
+def start_app(phone):
+    phone.shell(
+        "am start -n com.example.accidentgif/com.example.accidentgif.MainActivity")
+
+
+def pull_gif(phone, num):
+    file_name = "gif" + str(num) + ".gif"
+    phone.pull("/storage/emulated/0/Pictures/gif/test.gif", file_name)
