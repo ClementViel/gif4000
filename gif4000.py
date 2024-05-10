@@ -85,7 +85,9 @@ intro_video.start()
 print("waiting for audio to finish")
 intro_audio.join()
 video.setLoop(False)
-
+phone.turn_on_screen(serial)
+time.sleep(2)
+phone.unlock_phone(serial)
 
 try:
     while True:

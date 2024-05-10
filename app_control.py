@@ -2,6 +2,13 @@ import asyncio
 from ppadb.client import Client as AdbClient
 
 
+def turn_on_screen(phone):
+    phone.shell("input keyevent KEYCODE_POWER")
+
+def unlock_phone(phone):
+    phone.shell("input touchscreen swipe 930 880 930 380")
+    
+
 def connect_to_phone():
     client = AdbClient(host="127.0.0.1", port=5037)
     print("adb client version", client.version())
