@@ -1,85 +1,76 @@
-import sys
-import logging
-import asyncio
-import threading
-
-from typing import Any, Union
-
-from bless import (  # type: ignore
-    BlessServer,
-    BlessGATTCharacteristic,
-    GATTCharacteristicProperties,
-    GATTAttributePermissions,
-)
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(name=__name__)
-
-# NOTE: Some systems require different synchronization methods.
-trigger: Union[asyncio.Event, threading.Event]
-if sys.platform in ["darwin", "win32"]:
-    trigger = threading.Event()
-else:
-    trigger = asyncio.Event()
-
-# reads request from client
+from bluetoothctl import Bluetoothctl
+import time
+import os
 
 
-def read_request(characteristic: BlessGATTCharacteristic, **kwargs) -> bytearray:
-    logger.debug(f"Reading {characteristic.value}")
-    return characteristic.value
+#TDOD: implement a spawn of "bt-agent --capability=DisplayOnly -p /hme/clem/Projets/gif4000/pins"
+# expect("Passkey confirmed")
+# expect (UUID)
+# if no UUID alors respawn
 
+def init():
+    # TODO: check if bt-agent is registered
+    agent = Bluetoothctl()
+    agent.power("on")
+    agent.change_controller_name("gif4000")
+    #TODO check if any device present and remove if necessary.
+    device = agent.get_available_devices()
+    if device:
+        print("Oh shit a device")
+        address = agent.get_mac_address(device[0])
+        agent.remove(address)
+    return agent
 
-def write_request(characteristic: BlessGATTCharacteristic, value: Any, **kwargs):
-    characteristic.value = value
-    logger.debug(f"Char value set to {characteristic.value}")
-    if characteristic.value == b"\x0f":
-        logger.debug("NICE")
-        trigger.set()
+def start(agent):
+    agent.make_discoverable()
+    agent.make_pairable()
+    agent.device_advertise()
 
-
-async def run(loop):
-    trigger.clear()
-    # Instantiate the server
-    my_service_name = "GIF 4000"
-    server = BlessServer(name=my_service_name, loop=loop)
-    server.read_request_func = read_request
-    server.write_request_func = write_request
-
-    # Add Service
-    my_service_uuid = "A07498CA-AD5B-474E-940D-16F1FBE7E8CD"
-    await server.add_new_service(my_service_uuid)
-
-    # Add a Characteristic to the service
-    my_char_uuid = "51FF12BB-3ED8-46E5-B4F9-D64E2FEC021B"
-    char_flags = (
-        GATTCharacteristicProperties.read
-        | GATTCharacteristicProperties.write
-        | GATTCharacteristicProperties.indicate
-    )
-    permissions = GATTAttributePermissions.readable | GATTAttributePermissions.writeable
-    await server.add_new_characteristic(
-        my_service_uuid, my_char_uuid, char_flags, None, permissions
-    )
-
-    logger.debug(server.get_characteristic(my_char_uuid))
-    await server.start()
-    logger.debug("Advertising")
-    logger.info(f"Write '0xF' to the advertised characteristic: {
-                my_char_uuid}")
-    if trigger.__module__ == "threading":
-        trigger.wait()
+def isClientConnected(agent):
+    devices = agent.get_available_devices()
+    if not devices:
+        return -1
     else:
-        await trigger.wait()
-    print("coucou")
-    await asyncio.sleep(2)
-    logger.debug("Updating")
-    server.get_characteristic(my_char_uuid)
-    server.update_value(
-        my_service_uuid, "51FF12BB-3ED8-46E5-B4F9-D64E2FEC021B")
-    await asyncio.sleep(5)
-    await server.stop()
+        return devices[0]
+
+def get_mac_address(client):
+    mac_address = client["mac_address"]
+    print(mac_address)
+    return mac_address
+
+def send_file(path, address):
+    command = "timeout 60 bluetooth-sendto --device=" +address + " " + path
+    print(command)
+    os.system(command)
+
+def clean(agent, client, address):
+    if client["mac_address"] == address:
+        agent.disconnect(address)
+        agent.remove(address)
+    else:
+        print("client not registered")
+def stop(agent):
+    agent.power("off")
 
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(run(loop))
+def bt_loop():
+    client = -1
+    bt_controller = init()
+    start(bt_controller)
+    print("Started")
+    try:
+        while client == -1:
+            print("Connecting ")
+            client = isClientConnected(bt_controller)
+            print("client", client)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    address = get_mac_address(client)
+    print("got the address")
+    time.sleep(20)
+    send_file("/home/clem/Projets/gif4000/gif_test.gif", address)
+    clean(bt_controller, client, address)
+    stop(bt_controller)
+
+bt_loop()
