@@ -37,6 +37,10 @@ def start_app(phone):
     phone.shell(
         "am start -n com.example.accidentgif/com.example.accidentgif.MainActivity")
 
+def stop_app(phone):
+    phone.shell(
+        "am force-stop com.example.accidentgif")
+
 
 def pull_gif(phone, num):
     file_name = "gif" + str(num) + ".gif"

@@ -73,4 +73,3 @@ def bt_loop():
     clean(bt_controller, client, address)
     stop(bt_controller)
 
-bt_loop()

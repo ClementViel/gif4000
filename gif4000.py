@@ -4,6 +4,7 @@ import time
 import display as video
 import sound as audio
 import threading
+import bluetooth
 # connect to phone to control it:
 #   - start app
 #   - loop over take photo
@@ -27,6 +28,7 @@ def loop():
     time.sleep(10)
     phone.pull_gif(serial, num_gif)
     phone.erase_dir(serial)
+    bluetooth.bt_loop()
     num_gif += 1
 
 def thread_audio(function, moment):
@@ -36,7 +38,6 @@ def thread_audio(function, moment):
             path = "/home/clem/Téléchargements/labyrinth-for-the-brain-190096.mp3"
         print("playing audio ",path)
         audio.playSound(path)
-
     elif function == "stop":
         video.setLoop(False)
  
@@ -58,6 +59,8 @@ if serial is None:
     sys.exit(0)
 
 delay_list = []
+phone.start_app(serial)
+phone.stop_app(serial)
 phone.start_app(serial)
 # Generate random delays
 for num in range(0, num_pic):
@@ -85,9 +88,6 @@ intro_video.start()
 print("waiting for audio to finish")
 intro_audio.join()
 video.setLoop(False)
-phone.turn_on_screen(serial)
-time.sleep(2)
-phone.unlock_phone(serial)
 
 try:
     while True:
