@@ -1,12 +1,16 @@
 from bluetoothctl import Bluetoothctl
+import bluetooth_watchdog as wd
 import time
 import os
-
+import threading
 
 #TDOD: implement a spawn of "bt-agent --capability=DisplayOnly -p /hme/clem/Projets/gif4000/pins"
 # expect("Passkey confirmed")
 # expect (UUID)
 # if no UUID alors respawn
+
+
+
 
 def init():
     # TODO: check if bt-agent is registered
@@ -17,7 +21,7 @@ def init():
     device = agent.get_available_devices()
     if device:
         print("Oh shit a device")
-        address = agent.get_mac_address(device[0])
+        address = get_mac_address(device[0])
         agent.remove(address)
     return agent
 
@@ -52,9 +56,13 @@ def clean(agent, client, address):
 def stop(agent):
     agent.power("off")
 
+def watchdog_thread():
+    wd.watchdog()
 
 def bt_loop():
     client = -1
+    wd_thread = threading.Thread(target=watchdog_thread)
+    wd_thread.start()
     bt_controller = init()
     start(bt_controller)
     print("Started")
@@ -69,7 +77,7 @@ def bt_loop():
     address = get_mac_address(client)
     print("got the address")
     time.sleep(20)
-    send_file("/home/clem/Projets/gif4000/gif_test.gif", address)
+    send_file("/home/clem/Projets/gif4000/gif0.gif", address)
     clean(bt_controller, client, address)
     stop(bt_controller)
 
