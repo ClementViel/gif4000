@@ -7,6 +7,7 @@ import threading
 import bluetooth
 import shutil
 import datetime
+import os
 from pytimedinput import timedKey
 # connect to phone to control it:
 #   - start app
@@ -56,11 +57,19 @@ def loop(thread_audio):
     num_gif += 1
 
 def remove_attachment(path):
-     try:
-        os.remove(filename)
-    except OSError as e: # this would be "except OSError, e:" before Python 2.6
-        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
-            raise # re-raise exception if a different error occurred
+    try:
+        os.remove(path)
+    except:
+        print("nothing to RM")
+
+
+def audio_accident(seq_array):
+        for audio in seq_array:
+            if  audio != 0:
+                path = "/home/clem/Projets/gif4000/audio/" + audio
+                audio.playSound(path)
+            else:
+                time.sleep(5)
 
 def audio_select(function, moment, track):
     print("Thread audio starting")
@@ -114,7 +123,21 @@ print(delay_list)
 track = 0
 waiting = True
 cond = False
-execution_audio = threading.Thread(target=audio_select, args=("play","exec",track ))
+
+# generation tableau séquence
+sequence = ["ok1.mp3", 0, 0, 0, "ok2.mp3", 0, 0, 0, 0, "ok3.mp3"]
+# generation du nombre d'accident
+accident_num = random.randint(1,3)
+# placement des accidents.
+for index in range(accident_num):
+        #tirage au sort du numéro de l'accident
+        accident_idx = random.randint(0, 10)
+        accident_place = random.choice([1, 2, 3, 6, 7, 8])
+        print(accident_place)
+        sequence[accident_place] = "/home/clem/Projets/gif4000/audio/accident" + str(accident_idx) + ".mp3"
+
+print(sequence)
+execution_audio = threading.Thread(target=audio_accident, args=(sequence))
 
 
 while cond == False:
@@ -135,7 +158,6 @@ while cond == False:
     print("START intro")
     audio_select("play", "intro", track)
     time.sleep(5)
-    audio_select("play", "explications", track)
     # TODO add a trigger
     loop(execution_audio)
     # TODO : make sure start/join is always working
