@@ -43,7 +43,7 @@ def get_mac_address(client):
     return mac_address
 
 def send_file(path, address):
-    command = "timeout 60 bluetooth-sendto --device=" +address + " " + path
+    command = "timeout 120 bt-obex -p " +address + " " + path
     print(command)
     os.system(command)
 
@@ -80,4 +80,3 @@ def bt_loop():
     send_file("/home/clem/Projets/gif4000/gif0.gif", address)
     clean(bt_controller, client, address)
     stop(bt_controller)
-
