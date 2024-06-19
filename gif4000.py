@@ -20,10 +20,21 @@ def shuffle_list(liste):
     liste = list(range(1, 21))
     random.shuffle(liste)
 
+def copy_to_gallery():
+    new_name = "gif" + str(datetime.datetime.utcnow()) + ".gif"
+    shutil.copy2("/home/clem/Projets/gif4000/gif0.gif",
+                 "/home/clem/Projets/gif4000/showroom/public/images/photos/" + new_name)
 
-def loop():
+def copy_to_attachement():
+    new_name = "gif" + str(datetime.datetime.utcnow()) + ".gif"
+    shutil.copy2("/home/clem/Projets/gif4000/gif0.gif",
+                 "/home/clem/Projets/gif4000/public_html/images/gif0.gif")
+
+
+def loop(thread_audio):
     global num_gif
     waiting = True
+    thread_audio.start()
     print("this is gif num ", num_gif)
     for idx in range(0, num_pic):
         print("take photo ", idx)
@@ -32,18 +43,24 @@ def loop():
     time.sleep(10)
     phone.pull_gif(serial, 0)
     phone.erase_dir(serial)
-    new_name = "gif" + str(datetime.datetime.utcnow()) + ".gif"
-    shutil.copy2("/home/clem/Projets/gif4000/gif0.gif",
-                 "/home/clem/Projets/gif4000/showroom/public/images/photos/" + new_name)
     audio_select("play", "partage", track)
+    copy_to_attachement()
     while waiting == True:
-        key, timeout = timedKey(timeout=5, allowCharacters="b")
+        key, timeout = timedKey(timeout=5, allowCharacters="bsd")
         print(key)
-        if key == "b":
-            waiting = False
-
-    bluetooth.bt_loop()
+        if key == "s" :
+            copy_to_gallery()
+        elif key == "d":
+            waiting=False
+    thread_audio.join()
     num_gif += 1
+
+def remove_attachment(path):
+     try:
+        os.remove(filename)
+    except OSError as e: # this would be "except OSError, e:" before Python 2.6
+        if e.errno != errno.ENOENT: # errno.ENOENT = no such file or directory
+            raise # re-raise exception if a different error occurred
 
 def audio_select(function, moment, track):
     print("Thread audio starting")
@@ -85,6 +102,9 @@ phone.unlock_phone(serial)
 phone.start_app(serial)
 phone.stop_app(serial)
 phone.start_app(serial)
+
+# clean attachements
+remove_attachment("/home/clem/Projets/gif4000/public_html/images/gif0.gif")
 # Generate random delays
 for num in range(0, num_pic):
     delay_list.append(random.randrange(300, 3000, 100))
@@ -116,8 +136,7 @@ while cond == False:
     audio_select("play", "intro", track)
     time.sleep(5)
     audio_select("play", "explications", track)
-
-    execution_audio.start()
-    loop()
-    execution_audio.join()
+    # TODO add a trigger
+    loop(execution_audio)
+    # TODO : make sure start/join is always working
     audio_select("play", "conclu", track)
