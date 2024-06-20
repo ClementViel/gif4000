@@ -43,5 +43,6 @@ def stop_app(phone):
 
 
 def pull_gif(phone, num):
+    gif_name = "/storage/emulated/0/Pictures/gif/res_gif" + str(num) + ".gif"
     file_name = "gif" + str(num) + ".gif"
-    phone.pull("/storage/emulated/0/Pictures/gif/test.gif", file_name)
+    phone.pull(gif_name, file_name)
