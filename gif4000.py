@@ -34,7 +34,7 @@ def loop(thread_audio):
     gif = 0
     max_gif = 3
     waiting = True
-    #thread_audio.start()
+    thread_audio.start()
     for gif in range(0, max_gif):
         for idx in range(0, num_pic):
             print("take photo ", idx)
@@ -43,19 +43,19 @@ def loop(thread_audio):
     for gif in range(0, max_gif):
         phone.pull_gif(serial, gif)
     phone.erase_dir(serial)
-#    audio_select("play", "partage", 0)
- #   audio_select("play", "partage", 1)
-  #  audio_select("play", "partage", 2)
+    audio_select("play", "partage", 0)
+    audio_select("play", "partage", 1)
+    audio_select("play", "partage", 2)
       #  copy_to_attachement()
     while waiting == True:
-        key, timeout = timedKey(timeout=5, allowCharacters="bsd")
+        key, timeout = timedKey(timeout=5, allowCharacters="bszd")
         print(key)
         if key == "s" :
             print("copied to gallery")
             copy_to_gallery(max_gif)
-        elif key == "d":
+        elif key == "z":
             waiting=False
-    #thread_audio.join()
+    thread_audio.join()
 
 def remove_attachment(path):
     try:
@@ -111,14 +111,14 @@ def init_randoms():
     
     remove_attachment("/home/clem/Projets/gif4000/public_html/images/gif0.gif")
     # generation tableau séquence
-    sequence = ["ok1.mp3", 0, 0, 0, "ok2.mp3", 0, 0, 0, 0, "ok3.mp3"]
+    sequence = ["ok1.mp3", 0, 0,  "ok2.mp3", 0, 0, 0, "ok3.mp3"]
     # generation du nombre d'accident
     accident_num = random.randint(1,3)
     # placement des accidents.
     for index in range(accident_num):
             #tirage au sort du numéro de l'accident
-            accident_idx = random.randint(0, 10)
-            accident_place = random.choice([1, 2, 3, 6, 7, 8])
+            accident_idx = random.randint(0, 8)
+            accident_place = random.choice([1, 2, 4, 5, 6])
             print(accident_place)
             sequence[accident_place] = "accident" + str(accident_idx) + ".mp3"
     
@@ -154,25 +154,29 @@ phone.start_app(serial)
 
 
 cond = False
-waiting = True
 
 
 while cond == False:
+    waiting = True
     sequence = init_randoms()
+    while waiting == True:
+        audio_select("play", "attente", 0)
+        print("waiting for key")
+        key, timeout = timedKey(timeout=5, allowCharacters="q")
+        if key == "q":
+            waiting = False
 
-    print("GIF4000 starting....press a")
-    waitKey("a")
     print(datetime.datetime.utcnow())
 
 
     print("START intro")
-    #audio_select("play", "intro", 0)
-    #audio_select("play", "intro", 1)
-    #audio_select("play", "intro", 2)
-    #audio_select("play", "intro", 3)
-    #audio_select("play", "intro", 4)
-    waitKey("a") 
- #   execution_audio = threading.Thread(target=audio_accident, args=(sequence,))
-    loop(1)
+    audio_select("play", "intro", 0)
+    audio_select("play", "intro", 1)
+    audio_select("play", "intro", 2)
+    audio_select("play", "intro", 3)
+    audio_select("play", "intro", 4)
+    waitKey("q") 
+    execution_audio = threading.Thread(target=audio_accident, args=(sequence,))
+    loop(execution_audio)
     # TODO : make sure start/join is always working
- #   audio_select("play", "conclu", track)
+#    audio_select("play", "conclu", 0)
