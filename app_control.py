@@ -2,7 +2,7 @@ import asyncio
 from ppadb.client import Client as AdbClient
 
 
-def turn_on_screen(phone):
+def toggle_screen(phone):
     phone.shell("input keyevent KEYCODE_POWER")
 
 def unlock_phone(phone):
