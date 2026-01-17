@@ -1,3 +1,19 @@
+[project]
+name = "gif4000"
+version = "1.0.0"
+description = "gifomaton of the future"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+dependencies = [
+    "pynput>=1.8.1",
+    "pytimedinput>=2.0.1",
+]
+
+[tool.uv]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'"
+]
+
 [dependency-groups]
 dev = [
     "aiosignal==1.2.0",
