@@ -31,23 +31,22 @@ def copy_to_gallery(num_gifs):
     for idx in range(0, num_gifs):
         filename = "gif" + str(idx) + ".gif"
         new_name = "gif" + str(datetime.datetime.utcnow()) + ".gif"
-        shutil.copy2("/home/clem/Projets/gif4000/" + filename,
-                     "/home/clem/Projets/gif4000/showroom/images/" + new_name)
+        shutil.copy2(f"{local_path}/" + filename,
+                     f"{local_path}/showroom/images/" + new_name)
 
 
 def copy_to_attachement(num_gifs):
     for idx in range(0, num_gifs):
         filename = "gif" + str(idx) + ".gif"
-        shutil.copy2("/home/clem/Projets/gif4000/" + filename,
-                     "/home/clem/Projets/gif4000/public_html/images/" + filename)
+        shutil.copy2(f"{local_path}/" + filename,
+                     f"{local_path}/public_html/images/" + filename)
 
 
-def loop(thread_audio):
+def loop():
     global num_gif
     gif = 0
     max_gif = 3
     waiting = True
-    thread_audio.start()
     for gif in range(0, max_gif):
         for idx in range(0, num_pic):
             print("take photo ", idx)
@@ -56,12 +55,10 @@ def loop(thread_audio):
     time.sleep(3)
     for gif in range(0, max_gif):
         phone.pull_gif(serial, gif)
-    thread_audio.join()
-    phone.erase_dir(serial)
+    # phone.erase_dir(serial)
     toggle_phone(serial, on=False)
     copy_to_attachement(3)
     copy_to_gallery(max_gif)
-    audio_select("play", "partage", 0)
     waitKey("z")
     print("FIN")
 
@@ -141,11 +138,9 @@ def init_randoms():
     print(delay_list)
     track = 0
 
-    remove_file("/home/clem/Projets/gif4000/public_html/images/gif0.gif")
-    remove_file("/home/clem/Projets/gif4000/public_html/images/gif1.gif")
-    remove_file("/home/clem/Projets/gif4000/public_html/images/gif2.gif")
+    remove_file(f"{local_path}/public_html/images/gif0.gif")
     # generation tableau séquence
-    sequence = ["ok1.mp3", 0, 0, 0, "ok2.mp3", 0, 0, 0, "ok3.mp3"]
+    sequence = [0, 0, 0, 0, 0, 0, 0, 0, 0]
     # generation du nombre d'accident
     accident_num = random.randint(1, 3)
     # placement des accidents.
@@ -183,7 +178,7 @@ def keeping_showroom(path):
     for file_idx in range(0, number_of_files):
         if os.path.isfile(path + file_list[file_idx]):
             shutil.move(path + file_list[file_idx],
-                        "/home/clem/Projets/gif4000/backup/")
+                        f"{local_path}/backup/")
 
 
 toggle_phone.phone_state = "starting"
@@ -210,7 +205,6 @@ text_path.mkdir(parents=True, exist_ok=True)
 text_path = pathlib.Path(f"{local_path}/backup").resolve()
 text_path.mkdir(parents=True, exist_ok=True)
 
-
 keeping_showroom(f"{local_path}/showroom/images/")
 
 while cond == False:
@@ -235,5 +229,5 @@ while cond == False:
 #    toggle_phone(serial, on=True)
 #    waitKey("f")
 #    execution_audio = threading.Thread(target=audio_accident, args=(sequence,))
-#    loop(execution_audio)
+    loop()
 #    audio_select("play", "conclu", 0)

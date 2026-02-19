@@ -1,13 +1,17 @@
 import asyncio
 from ppadb.client import Client as AdbClient
 
+KEYCODE_PIN = "8 16 12 8 66"
+
 
 def toggle_screen(phone):
     phone.shell("input keyevent KEYCODE_POWER")
 
+
 def unlock_phone(phone):
-    phone.shell("input touchscreen swipe 930 880 930 380")
-    
+    phone.shell("input touchscreen swipe 930 880 930 300")
+    phone.shell(f"input keyevent {KEYCODE_PIN}")
+
 
 def connect_to_phone():
     client = AdbClient(host="127.0.0.1", port=5037)
@@ -37,12 +41,13 @@ def start_app(phone):
     phone.shell(
         "am start -n com.example.accidentgif/com.example.accidentgif.MainActivity")
 
+
 def stop_app(phone):
     phone.shell(
         "am force-stop com.example.accidentgif")
 
 
 def pull_gif(phone, num):
-    gif_name = "/storage/emulated/0/Pictures/gif/res_gif" + str(num) + ".gif"
+    gif_name = "/storage/emulated/0/Pictures/gif4000/res_gif0.gif"
     file_name = "gif" + str(num) + ".gif"
-    phone.pull(gif_name, file_name)
+    phone.pull(gif_name, "/Users/clem/Projets/gif4000/gif0.gif")
