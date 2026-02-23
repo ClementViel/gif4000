@@ -11,6 +11,9 @@ from pytimedinput import timedKey
 import sys
 import termios
 import pathlib
+import argparse
+import cv2
+import subprocess
 
 # connect to phone to control it:
 #   - start app
@@ -41,8 +44,7 @@ def copy_to_attachement(num_gifs):
         shutil.copy2(f"{local_path}/" + filename,
                      f"{local_path}/public_html/images/" + filename)
 
-
-def loop():
+def loop_phone():
     global num_gif
     gif = 0
     max_gif = 3
@@ -59,6 +61,26 @@ def loop():
     toggle_phone(serial, on=False)
     copy_to_attachement(3)
     copy_to_gallery(max_gif)
+    waitKey("z")
+    print("FIN")
+
+
+def loop():
+    global num_gif
+    gif = 0
+    max_gif = 3
+    waiting = True
+    for gif in range(0, max_gif):
+        for idx in range(0, num_pic):
+            print("take photo ", idx)
+            ret, frame = cam.read()
+            if ret:
+                cv2.imwrite(f"tmp/Captured{idx}.png", frame)
+            else:
+                print("Could not take photo")
+            time.sleep(delay_list[idx]/1000)
+    time.sleep(3)
+    subprocess.run("ffmpeg -y -framerate 25 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=768x1020 output.gif", shell=True)
     waitKey("z")
     print("FIN")
 
@@ -181,17 +203,24 @@ def keeping_showroom(path):
                         f"{local_path}/backup/")
 
 
-toggle_phone.phone_state = "starting"
 
-serial = phone.connect_to_phone()
+parser = argparse.ArgumentParser(prog="gif4000", description="accidental gifomaton")
+parser.add_argument("-p","--phone", action = "store_true")
+is_phone = parser.parse_args().phone
 
-if serial is None:
-    print("serial is None, connect phone and relaunch")
-    sys.exit(0)
+if is_phone:
+    toggle_phone.phone_state = "starting"
+    serial = phone.connect_to_phone()
+
+    if serial is None:
+        print("serial is None, connect phone and relaunch")
+        sys.exit(0)
+
+    toggle_phone(serial, on=True)
+else:
+    cam = cv2.VideoCapture(0)
 
 delay_list = []
-toggle_phone(serial, on=True)
-
 cond = False
 
 
@@ -229,5 +258,8 @@ while cond == False:
 #    toggle_phone(serial, on=True)
 #    waitKey("f")
 #    execution_audio = threading.Thread(target=audio_accident, args=(sequence,))
-    loop()
+    if is_phone:
+        loop_phone()
+    else:
+        loop()
 #    audio_select("play", "conclu", 0)
