@@ -1,0 +1,10 @@
+bin
+include
+lib
+lib64
+tmp
+showroom
+backup
+*.gif
+public_html/*
+__pycache__
