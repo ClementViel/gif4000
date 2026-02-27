@@ -83,7 +83,6 @@ def loop():
     time.sleep(3)
     subprocess.run("ffmpeg -y -framerate 25 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=768x1020 output.gif", shell=True)
     waitKey("z")
-    send_to_slideshow("output.gif")
     print("FIN")
 
 
