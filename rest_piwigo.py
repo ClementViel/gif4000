@@ -5,8 +5,8 @@ import json
 from bs4 import BeautifulSoup
 import re
 #Put your own stuff here
-ID=""
-SECRET=""
+ID="pkid-20260225-Ys0P4atPS7QMVwlg0i8s"
+SECRET="Se29br9IgOtquT1snk5DqDSwWJ96b9JCJRRsy2gg"
 PIWIGO_URL=""
 
 headers = [f'X-PIWIGO-API: {ID}:{SECRET}']
@@ -102,9 +102,10 @@ def get_download_link(id_album):
     url = images[0]['download_url']
     return url
 
-def delete_image(image_id, pwg_token):
+def delete_image(image_id):
     # Buffer to hold the response
     print(f"delete image {image_id}")
+    pwg_token = get_pwg_token()
     post_data = {"method": "pwg.images.delete", "image_id":image_id, "pwg_token":pwg_token }
     buffer = BytesIO()
 
