@@ -3,36 +3,34 @@ import os
 import rest_piwigo
 import qrcode
 import imageio
+from PIL import Image
+from tkinter import *
 
-def show_qr_code(url):
+def get_qr_code(url):
     print(url)
     code = qrcode.make(url)
     code.save("code.png")
-    img = cv2.imread("code.png")
-    cv2.namedWindow("code", cv2.WINDOW_NORMAL)
-    cv2.imshow("code",img)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
 
 def send_gif_to_server(gif_path):
    link = rest_piwigo.send_to_share(gif_path)
    return link
     # this function sends picture to
 
-def show_gif(gif_path):
-    img = imageio.mimread('2154.gif')
+def show_gif(gif_path, win_name):
+    print(f"showing gif {gif_path} in image {win_name}")
+    img = imageio.mimread(gif_path)
     if img is None:
         print("image is None")
         return
     num = len(img)
-    print(f"{num} pictures in gif")
-    cv2.namedWindow('gif', cv2.WINDOW_AUTOSIZE)
+    print(f"there are {num} images")
+    cv2.namedWindow(win_name)
     i = 0
+    print("Coucou avant while")
     while True:
-        cv2.imshow("gif", img[i])
-        if cv2.waitKey(100)&0xFF == 27:
+        cv2.imshow(win_name, img[i])
+        if cv2.waitKey(100)&0xFF == 97:
             break
         i = (i+1)%num
-    cv2.destroyAllWindows()
-
-show_gif("new.gif")
+    print("destroying win")
+    cv2.destroyWindow(win_name)

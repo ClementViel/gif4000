@@ -8,22 +8,33 @@ import shutil
 import datetime
 import os
 from pytimedinput import timedKey
+from pynput.keyboard import Key, Controller
 import sys
 import termios
 import pathlib
 import argparse
 import cv2
 import subprocess
-from rest_piwigo import send_to_slideshow
+from rest_piwigo import delete_image, send_to_slideshow, send_to_share, get_download_link
+from share import get_qr_code
+from simon_serial import setup_simon, read_from_serial, check_for_data, write_to_serial
 
 # connect to phone to control it:
 #   - start app
 #   - loop over take photo
 #   - pull gif and rename it.
-num_pic = 30
+num_pic = 15
 num_gif = 0
 gif_threshold = 10
 local_path = ""
+
+
+def show_image(path):
+    img = cv2.imread(path)
+    cv2.namedWindow("retour", cv2.WINDOW_NORMAL)
+    cv2.imshow("retour",img)
+    cv2.waitKey(0)
+    cv2.destroyAllWindows()
 
 
 def shuffle_list(liste):
@@ -66,11 +77,24 @@ def loop_phone():
     print("FIN")
 
 
-def loop():
+def loop(ser):
+    keyboard = Controller()
     global num_gif
     gif = 0
-    max_gif = 3
+    image_id=0
+    max_gif = 1
     waiting = True
+    share_gif=False
+    change_banner("images_web/3.png")
+    time.sleep(3)
+    change_banner("images_web/2.png")
+    time.sleep(3)
+    change_banner("images_web/1.png")
+    time.sleep(3)
+    change_banner("images_web/5_go.png")
+    time.sleep(3)
+    reset_banner()
+    loading_gif()
     for gif in range(0, max_gif):
         for idx in range(0, num_pic):
             print("take photo ", idx)
@@ -81,52 +105,83 @@ def loop():
                 print("Could not take photo")
             time.sleep(delay_list[idx]/1000)
     time.sleep(3)
-    subprocess.run("ffmpeg -y -framerate 25 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=768x1020 output.gif", shell=True)
-    waitKey("z")
-    print("FIN")
+    subprocess.run("ffmpeg -y -framerate 10 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=768x1020 output.gif", shell=True)
+    write_to_serial(ser, 'b')
+    time.sleep(1)
+    out = False 
+    while out == False:
+        change_banner("images_web/6_choix.png")
+        while not (check_for_data(ser)):
+            time.sleep(0.5)
+        key = read_from_serial(ser)
 
+        #    key = wait4Keys("abcd")
+        if (key == "jaune"):
+            time.sleep(2)
+            change_banner("images_web/7_validation.png")
+            write_to_serial(ser, 's')
+            write_to_serial(ser, 'a')
+            reset_qr_code()
+            while not (check_for_data(ser)):
+                time.sleep(0.5)
+            key = read_from_serial(ser)
+
+            if (key == "vert"):
+                share_gif = True
+                send_to_slideshow("output.gif")
+                time.sleep(3)
+            else:
+                return
+        elif(key == "vert"):
+            image_id, url = send_to_share("output.gif")
+            get_qr_code(url)
+            change_qr_code()
+
+        elif (key == "rouge"):
+            change_banner("images_web/8_remerciement.png")
+            reset_qr_code()
+            reset_banner()
+            time.sleep(2)
+            out = True
+        elif (key == "bleu"):
+            change_banner("images_web/5_go.png")
+            time.sleep(2)
+            reset_banner()
+            reset_qr_code()
+            out = True
+
+        else:
+            print("FIN ITOU")
+    if share_gif == False:
+        delete_image(image_id)
+    reset_qr_code()
+    print("FIN LOOP")
+
+
+def change_banner(banner_path):
+     shutil.copy2(banner_path, "banner.png")
+
+def change_qr_code():
+    shutil.copy2("code.png", "qr.png")
+
+def reset_qr_code():
+    shutil.copy2("images_web/black.png", "qr.png")
+
+
+def reset_banner():
+    shutil.copy2("images_web/black.png", "banner.png")
+
+def reset_gif():
+    shutil.copy2("images_web/black.png", "output.gif")
+
+def loading_gif():
+    shutil.copy2("loading.gif", "output.gif")
 
 def remove_file(path):
     try:
         os.remove(path)
     except:
         print("nothing to RM")
-
-
-def audio_accident(seq_array):
-    for audio_seq in seq_array:
-        if audio_seq != 0:
-            path = "/home/clem/Projets/gif4000/audio/" + audio_seq
-            audio.playSound(path)
-        else:
-            time.sleep(5)
-
-
-def audio_select(function, moment, track):
-    if function == "play":
-        if moment == "intro":
-            filename = "intro" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-        if moment == "explications":
-            filename = "exp" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-        if moment == "exec":
-            filename = "exec" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-        if moment == "partage":
-            filename = "partage" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-        if moment == "conclu":
-            filename = "conclu" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-        if moment == "attente":
-            filename = "attente" + str(track) + ".mp3"
-            path = "/home/clem/Projets/gif4000/audio/" + filename
-
-        else:
-            print("not the good sound")
-        print("playing audio ", path)
-        audio.playSound(path)
 
 
 def toggle_phone(serial, on):
@@ -156,53 +211,52 @@ def toggle_phone(serial, on):
 def init_randoms():
     # Generate random delays
     for num in range(0, num_pic):
-        delay_list.append(random.randrange(100, 300, 50))
+        delay_list.append(random.randrange(100, 1000, 50))
 
     print(delay_list)
     track = 0
 
-    remove_file(f"{local_path}/public_html/images/gif0.gif")
-    # generation tableau séquence
-    sequence = [0, 0, 0, 0, 0, 0, 0, 0, 0]
-    # generation du nombre d'accident
-    accident_num = random.randint(1, 3)
-    # placement des accidents.
-    for index in range(accident_num):
-        # tirage au sort du numéro de l'accident
-        accident_idx = random.randint(0, 8)
-        accident_place = random.choice([1, 2, 3, 5, 6, 7])
-        print(accident_place)
-        sequence[accident_place] = "accident" + str(accident_idx) + ".mp3"
+def wait4Keys(allowedkeys):
+    waiting = True
+    termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+    ret_val = ""
+    time.sleep(2)
+    while waiting == True:
+        print("Waiting for key")
+        key, timeout = timedKey(timeout=5, allowCharacters=allowedkeys)
+        if key == "a":
+            ret_val = key
+            waiting = False
+        elif key == "b":
+            ret_val = key
+            waiting = False
+        elif key == "c":
+            ret_val = key
+            waiting = False
+        elif key == "d":
+            ret_val = key
+            waiting = False
 
-    print(sequence)
-    return sequence
+        time.sleep(2)
+        
+    termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+    return ret_val
+
 
 
 def waitKey(exp_key):
     waiting = True
     termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+    time.sleep(2)
     while waiting == True:
-        print("waiting for key")
+        print("Waiting for key")
         key, timeout = timedKey(timeout=5, allowCharacters=exp_key)
         print(exp_key)
         if key == exp_key:
             waiting = False
-        time.sleep(1)
+        time.sleep(2)
+        
     termios.tcflush(sys.stdin, termios.TCIOFLUSH)
-
-
-def keeping_showroom(path):
-    # TODO :  list file number in dir
-    #         sort files from older to newer
-    file_list = os.listdir(path)
-    file_list.sort()
-    print("-----------------------------------")
-    number_of_files = len(file_list) - gif_threshold
-    for file_idx in range(0, number_of_files):
-        if os.path.isfile(path + file_list[file_idx]):
-            shutil.move(path + file_list[file_idx],
-                        f"{local_path}/backup/")
-
 
 
 parser = argparse.ArgumentParser(prog="gif4000", description="accidental gifomaton")
@@ -219,6 +273,7 @@ if is_phone:
 
     toggle_phone(serial, on=True)
 else:
+    #cam = cv2.VideoCapture(3)
     cam = cv2.VideoCapture(0)
 
 delay_list = []
@@ -228,39 +283,34 @@ cond = False
 local_path = pathlib.Path().resolve()
 print(f"local path is {local_path}")
 
-# create tree directory if not existent
-text_path = pathlib.Path(f"{local_path}/showroom/images/").resolve()
-text_path.mkdir(parents=True, exist_ok=True)
-
-text_path = pathlib.Path(f"{local_path}/backup").resolve()
-text_path.mkdir(parents=True, exist_ok=True)
-
-keeping_showroom(f"{local_path}/showroom/images/")
+ser = setup_simon()
+write_to_serial(ser, 's')
 
 while cond == False:
     waiting = True
-    sequence = init_randoms()
-
-    termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+    init_randoms()
+    reset_gif()
+    reset_banner()
+    time.sleep(1)
     while waiting == True:
-        print("waiting for key")
-        key, timeout = timedKey(timeout=5, allowCharacters="qaf")
-        if key == "f":
-            waiting = False
-    termios.tcflush(sys.stdin, termios.TCIOFLUSH)
+        change_banner("images_web/1_intro.png")
+        time.sleep(1)
+        write_to_serial(ser, 'a')
+        #TODO: AFFICHER IMAGE
+        print("wAiting for key")
+        if (check_for_data(ser)):
+            line = read_from_serial(ser)
+            if (line == "vert"):
+                time.sleep(0.5)
+                write_to_serial(ser, 's')
+                waiting = False
+        time.sleep(0.5)
 
-    print(datetime.datetime.utcnow())
-
-#    print("START intro")
-#    audio_select("play", "intro", 0)
-#    audio_select("play", "intro", 1)
-#    audio_select("play", "intro", 2)
-#    audio_select("play", "intro", 3)
-#    toggle_phone(serial, on=True)
-#    waitKey("f")
-#    execution_audio = threading.Thread(target=audio_accident, args=(sequence,))
+    date = datetime.datetime.utcnow()
+    reset_banner() 
     if is_phone:
         loop_phone()
     else:
-        loop()
-#    audio_select("play", "conclu", 0)
+        loop(ser)
+
+    write_to_serial(ser, 's')
