@@ -16,7 +16,7 @@ def read_from_serial(ser):
     if not ser or not ser.is_open:
         print("Serial connection is not open.")
         return None
-
+        
     try:
         # Wait for data to be available in the buffer
         while ser.in_waiting == 0:
@@ -35,13 +35,13 @@ def  write_to_serial(ser,char):
 
     ser.write(char.encode('utf-8'))
     ser.write(b'\r\n')
+    ser.flush()
 
 def check_for_data(ser):
     """ Check if there is data available to read on the serial port. """
     if not ser or not ser.is_open:
         print("Serial connection is not open.")
         return False
-
     return ser.in_waiting > 0
 
 def setup_simon():

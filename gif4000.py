@@ -78,23 +78,24 @@ def loop_phone():
 
 
 def loop(ser):
-    keyboard = Controller()
     global num_gif
     gif = 0
     image_id=0
     max_gif = 1
     waiting = True
     share_gif=False
+    write_to_serial(ser, 's')
     change_banner("images_web/3.png")
-    time.sleep(3)
+    time.sleep(2)
     change_banner("images_web/2.png")
-    time.sleep(3)
+    time.sleep(2)
     change_banner("images_web/1.png")
-    time.sleep(3)
+    time.sleep(2)
     change_banner("images_web/5_go.png")
-    time.sleep(3)
+    time.sleep(2)
     reset_banner()
     loading_gif()
+    ret, frame = cam.read()
     for gif in range(0, max_gif):
         for idx in range(0, num_pic):
             print("take photo ", idx)
@@ -104,34 +105,40 @@ def loop(ser):
             else:
                 print("Could not take photo")
             time.sleep(delay_list[idx]/1000)
-    time.sleep(3)
-    subprocess.run("ffmpeg -y -framerate 10 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=768x1020 output.gif", shell=True)
-    write_to_serial(ser, 'b')
+    time.sleep(1)
+    subprocess.run("ffmpeg -y -framerate 10 -f image2 -i '/home/clem/Projets/perso/gif4000/tmp/Captured%d.png' -vf scale=918x691 output.gif", shell=True)
+    for idx in range(0, num_pic):
+        remove_file(f"tmp/Captured{idx}.png")
     time.sleep(1)
     out = False 
+    write_to_serial(ser, 'b')
     while out == False:
         change_banner("images_web/6_choix.png")
+        ser.reset_input_buffer()
         while not (check_for_data(ser)):
             time.sleep(0.5)
         key = read_from_serial(ser)
 
         #    key = wait4Keys("abcd")
+        print(key)
         if (key == "jaune"):
-            time.sleep(2)
             change_banner("images_web/7_validation.png")
             write_to_serial(ser, 's')
             write_to_serial(ser, 'a')
             reset_qr_code()
+            time.sleep(4)
+            ser.reset_input_buffer()
             while not (check_for_data(ser)):
-                time.sleep(0.5)
+                time.sleep(1)
             key = read_from_serial(ser)
 
             if (key == "vert"):
                 share_gif = True
                 send_to_slideshow("output.gif")
-                time.sleep(3)
-            else:
-                return
+                change_banner("images_web/8_banco.png")
+                write_to_serial(ser, 's')
+                write_to_serial(ser, 'b')
+                time.sleep(1)
         elif(key == "vert"):
             image_id, url = send_to_share("output.gif")
             get_qr_code(url)
@@ -141,11 +148,11 @@ def loop(ser):
             change_banner("images_web/8_remerciement.png")
             reset_qr_code()
             reset_banner()
-            time.sleep(2)
+            time.sleep(1)
             out = True
         elif (key == "bleu"):
             change_banner("images_web/5_go.png")
-            time.sleep(2)
+            time.sleep(1)
             reset_banner()
             reset_qr_code()
             out = True
@@ -154,12 +161,12 @@ def loop(ser):
             print("FIN ITOU")
     if share_gif == False:
         delete_image(image_id)
+
     reset_qr_code()
     print("FIN LOOP")
 
-
 def change_banner(banner_path):
-     shutil.copy2(banner_path, "banner.png")
+    shutil.copy2(banner_path, "banner.png")
 
 def change_qr_code():
     shutil.copy2("code.png", "qr.png")
@@ -175,7 +182,7 @@ def reset_gif():
     shutil.copy2("images_web/black.png", "output.gif")
 
 def loading_gif():
-    shutil.copy2("loading.gif", "output.gif")
+    shutil.copy2("camera.gif", "output.gif")
 
 def remove_file(path):
     try:
@@ -209,7 +216,7 @@ def toggle_phone(serial, on):
 
 
 def init_randoms():
-    # Generate random delays
+        # Generate random delays
     for num in range(0, num_pic):
         delay_list.append(random.randrange(100, 1000, 50))
 
@@ -273,8 +280,8 @@ if is_phone:
 
     toggle_phone(serial, on=True)
 else:
-    #cam = cv2.VideoCapture(3)
-    cam = cv2.VideoCapture(0)
+    cam = cv2.VideoCapture(2)
+    cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
 delay_list = []
 cond = False
@@ -285,29 +292,25 @@ print(f"local path is {local_path}")
 
 ser = setup_simon()
 write_to_serial(ser, 's')
-
 while cond == False:
     waiting = True
     init_randoms()
     reset_gif()
     reset_banner()
+    reset_qr_code()
     time.sleep(1)
     while waiting == True:
-        change_banner("images_web/1_intro.png")
-        time.sleep(1)
         write_to_serial(ser, 'a')
-        #TODO: AFFICHER IMAGE
-        print("wAiting for key")
+        change_banner("images_web/1_intro.png")
         if (check_for_data(ser)):
             line = read_from_serial(ser)
             if (line == "vert"):
-                time.sleep(0.5)
-                write_to_serial(ser, 's')
                 waiting = False
         time.sleep(0.5)
 
-    date = datetime.datetime.utcnow()
     reset_banner() 
+    ser.flush()
+    write_to_serial(ser, 's')
     if is_phone:
         loop_phone()
     else:
