@@ -151,7 +151,7 @@ def loop(ser):
             time.sleep(1)
             out = True
         elif (key == "bleu"):
-            change_banner("images_web/5_go.png")
+            change_banner("images_web/_remerciement.png")
             time.sleep(1)
             reset_banner()
             reset_qr_code()
