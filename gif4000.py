@@ -18,6 +18,7 @@ import subprocess
 from rest_piwigo import delete_image, send_to_slideshow, send_to_share, get_download_link
 from share import get_qr_code
 from simon_serial import setup_simon, read_from_serial, check_for_data, write_to_serial
+from send_image import serve_banner, set_banner
 
 # connect to phone to control it:
 #   - start app
@@ -86,13 +87,14 @@ def loop(ser):
     share_gif=False
     write_to_serial(ser, 's')
     change_banner("images_web/3.png")
-    time.sleep(2)
+    time.sleep(1)
     change_banner("images_web/2.png")
-    time.sleep(2)
+    time.sleep(1)
     change_banner("images_web/1.png")
-    time.sleep(2)
+    time.sleep(1)
     change_banner("images_web/5_go.png")
-    time.sleep(2)
+    write_to_serial(ser, 'b')
+    time.sleep(1)
     reset_banner()
     loading_gif()
     ret, frame = cam.read()
@@ -111,7 +113,6 @@ def loop(ser):
         remove_file(f"tmp/Captured{idx}.png")
     time.sleep(1)
     out = False 
-    write_to_serial(ser, 'b')
     while out == False:
         change_banner("images_web/6_choix.png")
         ser.reset_input_buffer()
@@ -119,14 +120,13 @@ def loop(ser):
             time.sleep(0.5)
         key = read_from_serial(ser)
 
-        #    key = wait4Keys("abcd")
         print(key)
         if (key == "jaune"):
             change_banner("images_web/7_validation.png")
             write_to_serial(ser, 's')
             write_to_serial(ser, 'a')
             reset_qr_code()
-            time.sleep(4)
+            time.sleep(1)
             ser.reset_input_buffer()
             while not (check_for_data(ser)):
                 time.sleep(1)
@@ -280,7 +280,7 @@ if is_phone:
 
     toggle_phone(serial, on=True)
 else:
-    cam = cv2.VideoCapture(2)
+    cam = cv2.VideoCapture(0)
     cam.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
 delay_list = []
@@ -292,16 +292,18 @@ print(f"local path is {local_path}")
 
 ser = setup_simon()
 write_to_serial(ser, 's')
+banner = 0
 while cond == False:
     waiting = True
     init_randoms()
     reset_gif()
     reset_banner()
     reset_qr_code()
-    time.sleep(1)
     while waiting == True:
-        write_to_serial(ser, 'a')
-        change_banner("images_web/1_intro.png")
+        if (banner==0):
+            change_banner("images_web/1_intro.png")
+            write_to_serial(ser, 'a')
+            banner=1
         if (check_for_data(ser)):
             line = read_from_serial(ser)
             if (line == "vert"):
@@ -315,5 +317,5 @@ while cond == False:
         loop_phone()
     else:
         loop(ser)
+        banner=0
 
-    write_to_serial(ser, 's')

@@ -5,8 +5,8 @@ import json
 from bs4 import BeautifulSoup
 import re
 #Put your own stuff here
-ID="pkid-20260225-Ys0P4atPS7QMVwlg0i8s"
-SECRET="Se29br9IgOtquT1snk5DqDSwWJ96b9JCJRRsy2gg"
+ID="pkid-20260415-KygQnpm4yqGDG8C9eVXk"
+SECRET="kjRRLQYkwpHi1KeXmAiHw2Nown6ooO76voeDsxSD"
 PIWIGO_URL=""
 
 headers = [f'X-PIWIGO-API: {ID}:{SECRET}']
@@ -20,6 +20,7 @@ def get_pwg_token():
     curl.setopt(pycurl.URL, "https://dereference.net/piwigo/ws.php?"+urlencode(params))
     curl.perform()
     body = buffer.getvalue().decode('utf-8')
+    print(body)
 
     body = buffer.getvalue()
     # Decode using the encoding we figured out.
